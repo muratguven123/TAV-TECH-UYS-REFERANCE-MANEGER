@@ -41,6 +41,14 @@ public class StationController {
         return stationService.update(id, request);
     }
 
+    @GetMapping("/by-code/{icao}")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    public ResponseEntity<StationResponse> findByIcaoCode(@PathVariable String icao) {
+        return stationService.findByIcaoCode(icao)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('OPERATION_OFFICER')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

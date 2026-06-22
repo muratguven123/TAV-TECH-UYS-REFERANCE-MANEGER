@@ -41,6 +41,14 @@ public class AirlineController {
         return airlineService.update(id, request);
     }
 
+    @GetMapping("/by-code/{iata}")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    public ResponseEntity<AirlineResponse> findByIataCode(@PathVariable String iata) {
+        return airlineService.findByIataCode(iata)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('OPERATION_OFFICER')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

@@ -41,6 +41,14 @@ public class AircraftController {
         return aircraftService.update(id, request);
     }
 
+    @GetMapping("/by-tail/{tailNumber}")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    public ResponseEntity<AircraftResponse> findByTailNumber(@PathVariable String tailNumber) {
+        return aircraftService.findByTailNumber(tailNumber)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('OPERATION_OFFICER')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

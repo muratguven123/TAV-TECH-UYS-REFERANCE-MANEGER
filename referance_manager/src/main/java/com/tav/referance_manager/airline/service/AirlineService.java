@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -63,6 +64,11 @@ public class AirlineService {
         String code = airline.getCode();
         airlineRepository.delete(airline);
         eventPublisher.publish(ReferenceEntityType.AIRLINE, ChangeType.DELETED, code, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AirlineResponse> findByIataCode(String iataCode) {
+        return airlineRepository.findByCode(iataCode).map(airlineMapper::toResponse);
     }
 
     private Airline findOrThrow(Long id) {

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -64,6 +65,11 @@ public class AircraftService {
         String tailNumber = aircraft.getTailNumber();
         aircraftRepository.delete(aircraft);
         eventPublisher.publish(ReferenceEntityType.AIRCRAFT, ChangeType.DELETED, tailNumber, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AircraftResponse> findByTailNumber(String tailNumber) {
+        return aircraftRepository.findByTailNumber(tailNumber).map(aircraftMapper::toResponse);
     }
 
     private Aircraft findOrThrow(Long id) {

@@ -35,6 +35,16 @@ public class RouteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(routeService.create(request));
     }
 
+    @GetMapping("/by-codes")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    public ResponseEntity<RouteResponse> findByCodes(
+            @RequestParam String origin,
+            @RequestParam String destination) {
+        return routeService.findByCodes(origin, destination)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('OPERATION_OFFICER')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

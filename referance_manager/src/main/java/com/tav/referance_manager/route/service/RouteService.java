@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +63,13 @@ public class RouteService {
         String routeKey = buildRouteKey(route);
         routeRepository.delete(route);
         eventPublisher.publish(ReferenceEntityType.ROUTE, ChangeType.DELETED, routeKey, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<RouteResponse> findByCodes(String originIcao, String destinationIcao) {
+        return routeRepository
+                .findByOriginStation_IcaoCodeAndDestinationStation_IcaoCode(originIcao, destinationIcao)
+                .map(routeMapper::toResponse);
     }
 
     private Route findOrThrow(Long id) {

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -64,6 +65,11 @@ public class StationService {
         String icaoCode = station.getIcaoCode();
         stationRepository.delete(station);
         eventPublisher.publish(ReferenceEntityType.STATION, ChangeType.DELETED, icaoCode, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<StationResponse> findByIcaoCode(String icao) {
+        return stationRepository.findByIcaoCode(icao).map(stationMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
