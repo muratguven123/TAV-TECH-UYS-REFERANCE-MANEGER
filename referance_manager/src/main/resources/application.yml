@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: referance_manager
+    name: referance-manager
   config:
     import: optional:configserver:http://config-server:8888
 
@@ -47,6 +47,7 @@ eureka:
 app:
   gateway:
     secret: ${GATEWAY_SECRET:tav-gateway-internal-secret-change-in-prod}
+    url: ${GATEWAY_URL:http://localhost:8080}
 
 management:
   endpoints:
@@ -59,4 +60,3 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-
