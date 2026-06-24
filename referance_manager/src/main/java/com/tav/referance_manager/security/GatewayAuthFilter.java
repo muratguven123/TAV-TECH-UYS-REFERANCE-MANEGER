@@ -15,6 +15,8 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -58,7 +60,7 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         // 1. Gateway imzasını doğrula
         String gatewaySecret = request.getHeader("X-Gateway-Secret");
-        if (!StringUtils.hasText(gatewaySecret) || !gatewaySecret.equals(expectedGatewaySecret)) {
+        if (!StringUtils.hasText(gatewaySecret) || !secretsEqual(gatewaySecret, expectedGatewaySecret)) {
             log.warn("Geçersiz X-Gateway-Secret — direkt erişim veya gateway bypass: {}",
                     request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -88,5 +90,18 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Timing-safe karşılaştırma. String.equals() karakter sayısı veya ilk farklı karakter
+     * pozisyonuna göre erken döner; MessageDigest.isEqual() sabit zamanlıdır.
+     */
+    private boolean secretsEqual(String provided, String expected) {
+        if (provided == null || expected == null) {
+            return false;
+        }
+        byte[] a = provided.getBytes(StandardCharsets.UTF_8);
+        byte[] b = expected.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(a, b);
     }
 }

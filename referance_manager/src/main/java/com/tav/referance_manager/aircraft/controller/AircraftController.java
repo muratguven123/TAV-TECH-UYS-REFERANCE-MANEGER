@@ -42,7 +42,7 @@ public class AircraftController {
     }
 
     @GetMapping("/by-tail/{tailNumber}")
-    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST')")
     public ResponseEntity<AircraftResponse> findByTailNumber(@PathVariable String tailNumber) {
         return aircraftService.findByTailNumber(tailNumber)
                 .map(ResponseEntity::ok)

@@ -42,7 +42,7 @@ public class StationController {
     }
 
     @GetMapping("/by-code/{icao}")
-    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST')")
     public ResponseEntity<StationResponse> findByIcaoCode(@PathVariable String icao) {
         return stationService.findByIcaoCode(icao)
                 .map(ResponseEntity::ok)

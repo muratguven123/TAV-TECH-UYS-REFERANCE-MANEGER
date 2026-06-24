@@ -1,5 +1,4 @@
 package com.tav.referance_manager.integration;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tav.referance_manager.station.dto.StationRequest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -38,6 +37,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @EmbeddedKafka(partitions = 1, topics = {"reference.events"})
 class ReferenceStationIntegrationTest {
 
+    static {
+        java.util.Locale.setDefault(java.util.Locale.ENGLISH);
+    }
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -46,6 +49,9 @@ class ReferenceStationIntegrationTest {
 
     @Autowired
     private EmbeddedKafkaBroker embeddedKafkaBroker;
+
+    @org.springframework.beans.factory.annotation.Value("${app.gateway.secret}")
+    private String gatewaySecret;
 
     private BlockingQueue<ConsumerRecord<String, String>> records;
     private KafkaMessageListenerContainer<String, String> container;
@@ -67,12 +73,22 @@ class ReferenceStationIntegrationTest {
         ContainerTestUtils.waitForAssignment(container, embeddedKafkaBroker.getPartitionsPerTopic());
     }
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        if (container != null) {
+            container.stop();
+        }
+    }
+
     @Test
     @WithMockUser(roles = "OPERATION_OFFICER")
     void createStation_shouldReturn201AndPublishKafkaEvent() throws Exception {
         StationRequest request = new StationRequest("LTBA", "İstanbul Atatürk");
 
         mockMvc.perform(post("/api/reference/stations")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Name", "test-user")
+                        .header("X-User-Roles", "ROLE_OPERATION_OFFICER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -90,6 +106,9 @@ class ReferenceStationIntegrationTest {
         StationRequest request = new StationRequest("LTFM", "İstanbul Yeni Havalimanı");
 
         mockMvc.perform(post("/api/reference/stations")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Name", "test-user")
+                        .header("X-User-Roles", "ROLE_BI_SPECIALIST")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -101,6 +120,9 @@ class ReferenceStationIntegrationTest {
         StationRequest request = new StationRequest("LTB1", "Geçersiz İstasyon");
 
         mockMvc.perform(post("/api/reference/stations")
+                        .header("X-Gateway-Secret", gatewaySecret)
+                        .header("X-User-Name", "test-user")
+                        .header("X-User-Roles", "ROLE_OPERATION_OFFICER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())

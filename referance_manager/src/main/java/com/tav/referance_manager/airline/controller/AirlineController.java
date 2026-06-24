@@ -42,7 +42,7 @@ public class AirlineController {
     }
 
     @GetMapping("/by-code/{iata}")
-    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST')")
     public ResponseEntity<AirlineResponse> findByIataCode(@PathVariable String iata) {
         return airlineService.findByIataCode(iata)
                 .map(ResponseEntity::ok)

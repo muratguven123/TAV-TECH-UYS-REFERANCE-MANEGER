@@ -1,4 +1,9 @@
 spring:
+  config:
+    import: ""
+  cloud:
+    config:
+      enabled: false
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
     driver-class-name: org.h2.Driver
@@ -17,3 +22,8 @@ spring:
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
+
+eureka:
+  client:
+    enabled: false
+

@@ -36,7 +36,7 @@ public class RouteController {
     }
 
     @GetMapping("/by-codes")
-    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST')")
     public ResponseEntity<RouteResponse> findByCodes(
             @RequestParam String origin,
             @RequestParam String destination) {
