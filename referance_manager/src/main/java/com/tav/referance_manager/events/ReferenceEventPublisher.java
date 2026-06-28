@@ -1,8 +1,8 @@
 package com.tav.referance_manager.events;
 
-import com.tav.referance_manager.events.ChangeType;
-import com.tav.referance_manager.events.ReferenceChangedEvent;
-import com.tav.referance_manager.events.ReferenceEntityType;
+import com.tav.uys.events.ChangeType;
+import com.tav.uys.events.ReferenceChangedEvent;
+import com.tav.uys.events.ReferenceEntityType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;

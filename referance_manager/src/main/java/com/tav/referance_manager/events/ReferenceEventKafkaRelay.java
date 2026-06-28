@@ -1,5 +1,6 @@
 package com.tav.referance_manager.events;
 
+import com.tav.uys.events.ReferenceChangedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

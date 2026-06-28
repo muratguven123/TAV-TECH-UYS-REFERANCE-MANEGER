@@ -80,6 +80,17 @@ class ReferenceStationIntegrationTest {
         }
     }
 
+    private ConsumerRecord<String, String> pollRecord(String key, String valueSubstring) throws InterruptedException {
+        long stopTime = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < stopTime) {
+            ConsumerRecord<String, String> record = records.poll(100, TimeUnit.MILLISECONDS);
+            if (record != null && key.equals(record.key()) && (valueSubstring == null || record.value().contains(valueSubstring))) {
+                return record;
+            }
+        }
+        return null;
+    }
+
     @Test
     @WithMockUser(roles = "OPERATION_OFFICER")
     void createStation_shouldReturn201AndPublishKafkaEvent() throws Exception {
@@ -94,7 +105,7 @@ class ReferenceStationIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.icaoCode").value("LTBA"));
 
-        ConsumerRecord<String, String> record = records.poll(5, TimeUnit.SECONDS);
+        ConsumerRecord<String, String> record = pollRecord("STATION:LTBA", "CREATED");
         assertThat(record).isNotNull();
         assertThat(record.key()).isEqualTo("STATION:LTBA");
         assertThat(record.value()).contains("CREATED").contains("LTBA");

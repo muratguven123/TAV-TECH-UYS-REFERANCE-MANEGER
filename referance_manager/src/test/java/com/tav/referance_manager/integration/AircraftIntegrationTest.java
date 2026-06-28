@@ -18,7 +18,10 @@ import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.listener.MessageListener;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.kafka.test.utils.ContainerTestUtils;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
@@ -30,40 +33,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Aircraft CRUD + Kafka event emission integration testleri.
- *
- * Gerçek MySQL Testcontainer + gerçek Kafka Testcontainer kullanılır.
- * FAS ContainersConfig ve ReferenceStationIntegrationTest pattern'ini referans alır.
- *
- * Test kapsamı:
- *  - POST /api/reference/aircrafts → 201 + DB'de kayıt + Kafka event
- *  - POST duplicate tailNumber → 409
- *  - DELETE → 204 + DB'den silindi + DELETED event Kafka'da
- *  - PUT update → 200 + UPDATED event Kafka'da
- *  - OPERATION_OFFICER dışı rol → 403
- */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(IntegrationContainersConfig.class)
-@TestPropertySource(properties = {
-        "spring.config.import=",
-        "spring.cloud.config.enabled=false",
-        "eureka.client.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "app.gateway.secret=test-gateway-secret",
-        "spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer",
-        "spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer"
-})
+@ActiveProfiles("test")
+@EmbeddedKafka(partitions = 1, topics = {"reference.events"})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AircraftIntegrationTest {
 
     private static final String GATEWAY_SECRET = "test-gateway-secret";
     private static final String TOPIC = "reference.events";
 
-
-    @Value("${spring.kafka.bootstrap-servers}")
-    String kafkaBootstrapServers;
+    @Autowired
+    private EmbeddedKafkaBroker embeddedKafkaBroker;
 
     @Autowired
     MockMvc mockMvc;
@@ -83,12 +64,8 @@ class AircraftIntegrationTest {
         aircraftRepository.deleteAll();
         records = new LinkedBlockingQueue<>();
 
-        // Kafka bootstrap bilgisi @ServiceConnection ile otomatik set edilir
-        // Ancak KafkaTestUtils'in EmbeddedKafkaBroker'ı yok; spring.kafka.bootstrap-servers'ı kullan
-        String bootstrapServers = kafkaBootstrapServers;
-
         Map<String, Object> props = KafkaTestUtils.consumerProps(
-                "it-aircraft-consumer-" + System.currentTimeMillis(), "true", bootstrapServers);
+                "it-aircraft-consumer-" + System.currentTimeMillis(), "true", embeddedKafkaBroker);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -100,8 +77,7 @@ class AircraftIntegrationTest {
                 new DefaultKafkaConsumerFactory<>(props), containerProps);
         container.start();
 
-        // Container'ın topic'e assign olmasını bekle
-        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+        ContainerTestUtils.waitForAssignment(container, embeddedKafkaBroker.getPartitionsPerTopic());
     }
 
     @AfterEach
@@ -109,6 +85,17 @@ class AircraftIntegrationTest {
         if (container != null && container.isRunning()) {
             container.stop();
         }
+    }
+
+    private ConsumerRecord<String, String> pollRecord(String key, String valueSubstring) throws InterruptedException {
+        long stopTime = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < stopTime) {
+            ConsumerRecord<String, String> record = records.poll(100, TimeUnit.MILLISECONDS);
+            if (record != null && key.equals(record.key()) && (valueSubstring == null || record.value().contains(valueSubstring))) {
+                return record;
+            }
+        }
+        return null;
     }
 
     // ─── TESTLER ─────────────────────────────────────────────────────────────
@@ -137,7 +124,7 @@ class AircraftIntegrationTest {
         assertThat(aircraftRepository.findByTailNumber("TC-JFA")).isPresent();
 
         // then — Kafka event
-        ConsumerRecord<String, String> record = records.poll(5, TimeUnit.SECONDS);
+        ConsumerRecord<String, String> record = pollRecord("AIRCRAFT:TC-JFA", "CREATED");
         assertThat(record).as("Kafka'dan CREATED event bekleniyor").isNotNull();
         assertThat(record.key()).isEqualTo("AIRCRAFT:TC-JFA");
         assertThat(record.value()).contains("CREATED").contains("TC-JFA");
@@ -189,7 +176,7 @@ class AircraftIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         Long id = objectMapper.readTree(createResp).get("id").asLong();
-        records.clear(); // oluşturma event'ini temizle
+        pollRecord("AIRCRAFT:TC-DEL", "CREATED"); // wait for CREATED event to be fully received
 
         // when — sil
         mockMvc.perform(delete("/api/reference/aircrafts/" + id)
@@ -202,7 +189,7 @@ class AircraftIntegrationTest {
         assertThat(aircraftRepository.findById(id)).isEmpty();
 
         // then — Kafka'da DELETED event
-        ConsumerRecord<String, String> record = records.poll(5, TimeUnit.SECONDS);
+        ConsumerRecord<String, String> record = pollRecord("AIRCRAFT:TC-DEL", "DELETED");
         assertThat(record).as("Kafka'dan DELETED event bekleniyor").isNotNull();
         assertThat(record.key()).isEqualTo("AIRCRAFT:TC-DEL");
         assertThat(record.value()).contains("DELETED");
@@ -225,7 +212,7 @@ class AircraftIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         Long id = objectMapper.readTree(createResp).get("id").asLong();
-        records.clear();
+        pollRecord("AIRCRAFT:TC-UPD", "CREATED"); // wait for CREATED event to be fully received
 
         // when
         mockMvc.perform(put("/api/reference/aircrafts/" + id)
@@ -239,7 +226,7 @@ class AircraftIntegrationTest {
                 .andExpect(jsonPath("$.type").value("A320"));
 
         // then — Kafka
-        ConsumerRecord<String, String> record = records.poll(5, TimeUnit.SECONDS);
+        ConsumerRecord<String, String> record = pollRecord("AIRCRAFT:TC-UPD", "UPDATED");
         assertThat(record).as("Kafka'dan UPDATED event bekleniyor").isNotNull();
         assertThat(record.value()).contains("UPDATED");
     }

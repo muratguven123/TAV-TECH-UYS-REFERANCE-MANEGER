@@ -2,9 +2,9 @@ package com.tav.referance_manager.contract;
 
 import com.tav.referance_manager.airline.dto.AirlineResponse;
 import com.tav.referance_manager.aircraft.dto.AircraftResponse;
-import com.tav.referance_manager.events.ChangeType;
-import com.tav.referance_manager.events.ReferenceChangedEvent;
-import com.tav.referance_manager.events.ReferenceEntityType;
+import com.tav.uys.events.ChangeType;
+import com.tav.uys.events.ReferenceChangedEvent;
+import com.tav.uys.events.ReferenceEntityType;
 import com.tav.referance_manager.events.ReferenceEventKafkaRelay;
 import com.tav.referance_manager.route.dto.RouteResponse;
 import com.tav.referance_manager.station.dto.StationResponse;
@@ -46,6 +46,7 @@ import org.springframework.test.context.TestPropertySource;
         bootstrapServersProperty = "spring.kafka.bootstrap-servers"
 )
 @TestPropertySource(locations = "classpath:/rm-contract-test.properties")
+@org.springframework.context.annotation.Import(ReferenceEventProducerBase.ContractVerifierBridgeConfig.class)
 public abstract class ReferenceEventProducerBase {
 
     @Autowired
@@ -112,5 +113,36 @@ public abstract class ReferenceEventProducerBase {
     public void triggerRouteDeleted() {
         relay.onReferenceChanged(new ReferenceChangedEvent(
                 ReferenceEntityType.ROUTE, ChangeType.DELETED, "LTFM-LTAC", null));
+    }
+
+    @org.springframework.boot.test.context.TestConfiguration
+    public static class ContractVerifierBridgeConfig {
+
+        @org.springframework.context.annotation.Bean("reference.events")
+        public org.springframework.messaging.MessageChannel referenceEventsChannel() {
+            return new org.springframework.integration.channel.QueueChannel();
+        }
+
+        @org.springframework.kafka.annotation.KafkaListener(
+                topics = "reference.events",
+                groupId = "contract-verifier-bridge"
+        )
+        public void bridgeToChannel(
+                org.springframework.messaging.Message<com.tav.uys.events.ReferenceChangedEvent> kafkaMessage
+        ) {
+            org.springframework.messaging.MessageChannel channel = referenceEventsChannel();
+            String key = (String) kafkaMessage.getHeaders().get(org.springframework.kafka.support.KafkaHeaders.RECEIVED_KEY);
+            com.tav.uys.events.ReferenceChangedEvent payload = kafkaMessage.getPayload();
+            
+            java.util.Map<String, Object> headers = new java.util.HashMap<>();
+            headers.put("kafka_messageKey", key);
+            
+            org.springframework.messaging.Message<?> channelMessage = 
+                    org.springframework.messaging.support.MessageBuilder
+                            .withPayload(payload)
+                            .copyHeaders(headers)
+                            .build();
+            channel.send(channelMessage);
+        }
     }
 }

@@ -6,22 +6,21 @@ import com.tav.referance_manager.station.domain.Station;
 import com.tav.referance_manager.station.mapper.StationMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.BeforeEach;
 import org.mapstruct.factory.Mappers;
-import org.mockito.InjectMocks;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
 class RouteMapperTest {
 
-    @Spy
     private StationMapper stationMapper = Mappers.getMapper(StationMapper.class);
+    private RouteMapper mapper = Mappers.getMapper(RouteMapper.class);
 
-    @InjectMocks
-    private RouteMapperImpl mapper = (RouteMapperImpl) Mappers.getMapper(RouteMapper.class);
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(mapper, "stationMapper", stationMapper);
+    }
 
     @Test
     @DisplayName("toResponse → Route iki Station alanını da nested olarak kopyalar")

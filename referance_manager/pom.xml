@@ -18,6 +18,9 @@
 		<java.version>21</java.version>
 		<spring-cloud.version>2024.0.1</spring-cloud.version>
 		<mapstruct.version>1.6.3</mapstruct.version>
+		<build.dir>target</build.dir>
+		<classes.dir>target/classes</classes.dir>
+		<testClasses.dir>target/test-classes</testClasses.dir>
 	</properties>
 
 	<dependencyManagement>
@@ -29,32 +32,15 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-
-        <!-- Testcontainers — IT testleri -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-testcontainers</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>kafka</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+		</dependencies>
 	</dependencyManagement>
 
 	<dependencies>
+		<dependency>
+			<groupId>com.tav</groupId>
+			<artifactId>uys-events-contract</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-config</artifactId>
@@ -66,6 +52,10 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -111,6 +101,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
@@ -130,15 +125,40 @@
 			<artifactId>spring-cloud-starter-contract-verifier</artifactId>
 			<scope>test</scope>
 		</dependency>
-	
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.5</version>
-        </dependency>
-    </dependencies>
+
+		<!-- Testcontainers — IT testleri -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mysql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>kafka</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.8.5</version>
+		</dependency>
+	</dependencies>
 
 	<build>
+		<directory>${build.dir}</directory>
+		<outputDirectory>${classes.dir}</outputDirectory>
+		<testOutputDirectory>${testClasses.dir}</testOutputDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -160,6 +180,7 @@
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
+							<version>1.18.36</version>
 						</path>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -177,12 +198,34 @@
 			<plugin>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-contract-maven-plugin</artifactId>
-				<version>4.1.4</version>
+				<!-- Must match the contract-verifier runtime managed by spring-cloud 2024.0.1 (4.2.1).
+				     A plugin/runtime skew generates Reference_eventsTest against a different
+				     messaging API than the one on the classpath. FlightService already uses 4.2.1. -->
+				<version>4.2.1</version>
 				<extensions>true</extensions>
 				<configuration>
+					<basePackageForTests>com.tav.referance_manager.contract</basePackageForTests>
 					<baseClassForTests>com.tav.referance_manager.contract.ReferenceEventProducerBase</baseClassForTests>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-Duser.language=en -Duser.country=US</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>cli-build</id>
+			<properties>
+				<build.dir>target/cli</build.dir>
+				<classes.dir>target/cli/classes</classes.dir>
+				<testClasses.dir>target/cli/test-classes</testClasses.dir>
+			</properties>
+		</profile>
+	</profiles>
 </project>

@@ -2,8 +2,8 @@ package com.tav.referance_manager.route.service;
 
 import com.tav.referance_manager.common.exception.BusinessException;
 import com.tav.referance_manager.common.exception.NotFoundException;
-import com.tav.referance_manager.events.ChangeType;
-import com.tav.referance_manager.events.ReferenceEntityType;
+import com.tav.uys.events.ChangeType;
+import com.tav.uys.events.ReferenceEntityType;
 import com.tav.referance_manager.events.ReferenceEventPublisher;
 import com.tav.referance_manager.route.domain.Route;
 import com.tav.referance_manager.route.dto.RouteRequest;

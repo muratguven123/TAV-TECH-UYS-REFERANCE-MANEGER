@@ -2,9 +2,11 @@ package com.tav.referance_manager;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "spring.config.import=",
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL",
