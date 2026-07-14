@@ -20,29 +20,31 @@ public class AircraftController {
     private final AircraftService aircraftService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST', 'ADMIN')")
     public List<AircraftResponse> getAll() {
         return aircraftService.getAll();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST', 'ADMIN')")
     public AircraftResponse getById(@PathVariable Long id) {
         return aircraftService.getById(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('OPERATION_OFFICER')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
     public ResponseEntity<AircraftResponse> create(@Valid @RequestBody AircraftRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(aircraftService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('OPERATION_OFFICER')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
     public AircraftResponse update(@PathVariable Long id, @Valid @RequestBody AircraftRequest request) {
         return aircraftService.update(id, request);
     }
 
     @GetMapping("/by-tail/{tailNumber}")
-    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST', 'ADMIN')")
     public ResponseEntity<AircraftResponse> findByTailNumber(@PathVariable String tailNumber) {
         return aircraftService.findByTailNumber(tailNumber)
                 .map(ResponseEntity::ok)
@@ -50,7 +52,7 @@ public class AircraftController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('OPERATION_OFFICER')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         aircraftService.delete(id);
         return ResponseEntity.noContent().build();

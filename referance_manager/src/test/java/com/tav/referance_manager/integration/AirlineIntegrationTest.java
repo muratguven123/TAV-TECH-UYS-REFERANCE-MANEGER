@@ -258,4 +258,29 @@ class AirlineIntegrationTest {
         assertThat(record).isNotNull();
         assertThat(record.value()).contains("UPDATED");
     }
+
+    @Test
+    @Order(7)
+    @WithMockUser(roles = "BI_SPECIALIST")
+    @DisplayName("GET /api/reference/airlines - BI_SPECIALIST ile okuma -> 200 OK")
+    void listAirlines_withBiSpecialist_returns200() throws Exception {
+        mockMvc.perform(get("/api/reference/airlines")
+                        .header("X-Gateway-Secret", GATEWAY_SECRET)
+                        .header("X-User-Name", "analyst")
+                        .header("X-User-Roles", "ROLE_BI_SPECIALIST"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @Order(8)
+    @WithMockUser(roles = "USER")
+    @DisplayName("GET /api/reference/airlines - Gecersiz rol (USER) ile okuma -> 403 Forbidden")
+    void listAirlines_withUser_returns403() throws Exception {
+        mockMvc.perform(get("/api/reference/airlines")
+                        .header("X-Gateway-Secret", GATEWAY_SECRET)
+                        .header("X-User-Name", "common-user")
+                        .header("X-User-Roles", "ROLE_USER"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Yetkisiz işlem"));
+    }
 }

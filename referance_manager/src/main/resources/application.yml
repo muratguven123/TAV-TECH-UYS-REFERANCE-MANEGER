@@ -13,9 +13,15 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:uys_secret}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate   # FIX: DEF-015 — Flyway yönetir
     open-in-view: false
     database-platform: org.hibernate.dialect.MySQLDialect
 

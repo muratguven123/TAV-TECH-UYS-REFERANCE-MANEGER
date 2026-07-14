@@ -20,23 +20,25 @@ public class RouteController {
     private final RouteService routeService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST', 'ADMIN')")
     public List<RouteResponse> getAll() {
         return routeService.getAll();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST', 'ADMIN')")
     public RouteResponse getById(@PathVariable Long id) {
         return routeService.getById(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('OPERATION_OFFICER')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
     public ResponseEntity<RouteResponse> create(@Valid @RequestBody RouteRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(routeService.create(request));
     }
 
     @GetMapping("/by-codes")
-    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'BI_SPECIALIST', 'ADMIN')")
     public ResponseEntity<RouteResponse> findByCodes(
             @RequestParam String origin,
             @RequestParam String destination) {
@@ -46,7 +48,7 @@ public class RouteController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('OPERATION_OFFICER')")
+    @PreAuthorize("hasAnyRole('OPERATION_OFFICER', 'ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         routeService.delete(id);
         return ResponseEntity.noContent().build();
